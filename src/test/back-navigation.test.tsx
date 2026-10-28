@@ -37,7 +37,7 @@ afterEach(cleanup);
 
 describe("Back to menu", () => {
   it("goes back to the main menu from the check-up when nothing is answered yet", async () => {
-    render(<App />);
+    render(<Screen />);
     fireEvent.click(screen.getByRole("button", { name: "Fractions" }));
     await screen.findByText("Which equals 1/2?");
     expect(atMenu()).toBe(false);
@@ -48,7 +48,7 @@ describe("Back to menu", () => {
   });
 
   it("asks first when answers would be thrown away, and keeps the check-up on 'Keep going'", async () => {
-    render(<App />);
+    render(<Screen />);
     fireEvent.click(screen.getByRole("button", { name: "Fractions" }));
     await screen.findByText("Which equals 1/2?");
     option("2/4");
@@ -64,7 +64,7 @@ describe("Back to menu", () => {
   });
 
   it("clears the check-up when leaving it for the menu", async () => {
-    render(<App />);
+    render(<Screen />);
     fireEvent.click(screen.getByRole("button", { name: "Fractions" }));
     await screen.findByText("Which equals 1/2?");
     option("2/4");
