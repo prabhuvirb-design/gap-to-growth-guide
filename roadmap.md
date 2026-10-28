@@ -4,4 +4,4 @@
 - [x] Make the Student/Teacher choice the first window when tapping Sign in or Create account.
 - [x] Recolor the app to the Abyss Blue / Obsidian Slate / Frost White / Electric Sky palette.
 - [ ] Verify signed-in teacher home end-to-end: waiting on a teacher account; the existing test account is a student.
-- [ ] Add and verify permanent student self-deletion with confirmation and full learning-data removal.
+- [x] Add and verify permanent student self-deletion with confirmation and full learning-data removal.
