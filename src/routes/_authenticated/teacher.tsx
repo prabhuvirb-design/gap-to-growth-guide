@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getTeacherHome } from "@/lib/account.functions";
 import { Button } from "@/components/ui/button";
 import { SessionMenu } from "@/components/session-menu";
-import { GraduationCap, BookOpen, UserRound } from "lucide-react";
+import { GraduationCap, BookOpen, BookMarked, UserRound } from "lucide-react";
 import { TeacherClassroom } from "@/components/teacher-classroom";
 import { DeleteAccount } from "@/components/delete-account";
 
@@ -44,6 +44,7 @@ function TeacherHome() {
       {data.subject && <p className="mt-3 text-muted-foreground">Subject focus: {data.subject}</p>}
       <div className="mt-10 flex flex-wrap gap-4">
         <Button asChild size="lg"><Link to="/"><BookOpen />Open the tutor</Link></Button>
+        <Button asChild variant="outline" size="lg"><Link to="/teacher-marks"><BookMarked />Mark book</Link></Button>
         <Button asChild variant="outline" size="lg"><Link to="/account"><UserRound />My profile</Link></Button>
       </div>
       <TeacherClassroom />
