@@ -28,6 +28,7 @@ vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 import { App } from "@/routes/index";
 
 const menu = () => screen.getByRole("heading", { name: /the tutor that learns/i });
+const atMenu = () => !!screen.queryByRole("heading", { name: /the tutor that learns/i });
 const option = (text: string) => fireEvent.click(screen.getByText(text).closest("button")!);
 
 afterEach(cleanup);
