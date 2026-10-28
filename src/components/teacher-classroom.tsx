@@ -105,7 +105,7 @@ export function TeacherClassroom() {
       <AlertDialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Remove {removingStudent?.name ?? "this student"}?</AlertDialogTitle>
-          <AlertDialogDescription>The student record leaves your classroom{removingMarks ? ` and ${removingMarks} stored ${removingMarks === 1 ? "mark" : "marks"} for them are deleted too` : ""}. This cannot be undone.</AlertDialogDescription>
+          <AlertDialogDescription>The student record leaves your classroom{removingMarks ? ` and ${removingMarks} stored ${removingMarks === 1 ? "mark" : "marks"} for them ${removingMarks === 1 ? "is" : "are"} deleted too` : ""}. This cannot be undone.</AlertDialogDescription>
         </AlertDialogHeader>
         {removeError && <p role="alert" className="break-words text-sm text-destructive">{removeError}</p>}
         <AlertDialogFooter className="gap-2">
