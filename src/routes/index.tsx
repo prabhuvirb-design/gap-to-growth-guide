@@ -104,7 +104,7 @@ function App() {
             <span className="font-display text-xl font-semibold">Mentora</span>
           </button>
         </div>
-        <SessionMenu hideSignedOut />
+        <SessionMenu />
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
         {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
