@@ -1,4 +1,4 @@
-import { createFileRoute, Link, navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,14 +17,17 @@ export const Route = createFileRoute("/reset-password")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { type?: string } => ({
-    type: typeof search.type === "string" ? search.type : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { type?: string } => {
+    const out: { type?: string } = {};
+    if (typeof search["type"] === "string") out.type = search["type"];
+    return out;
+  },
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
   const { type } = Route.useSearch();
+  const go = useNavigate();
   const [state, setState] = useState<"checking" | "expired" | "ready">("checking");
   const [password, setPassword] = useState("");
   const [again, setAgain] = useState("");
@@ -62,7 +65,7 @@ function ResetPasswordPage() {
       return;
     }
     toast.success("New password saved.");
-    await navigate({ to: "/", replace: true });
+    await go({ to: "/", replace: true });
   }
 
   return (

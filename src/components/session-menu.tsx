@@ -25,7 +25,7 @@ export function SessionMenu() {
           <Link to="/auth">Sign in</Link>
         </Button>
         <Button asChild size="sm">
-          <Link to="/auth?mode=signup">Create account</Link>
+          <Link to="/auth" search={{ mode: "signup" }}>Create account</Link>
         </Button>
       </div>
     );

@@ -1,5 +1,5 @@
-import { createFileRoute, Link, navigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -21,17 +21,25 @@ export const Route = createFileRoute("/auth")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { mode?: string; next?: string } => ({
-    mode: typeof search.mode === "string" ? search.mode : undefined,
-    next: typeof search.next === "string" ? search.next : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { mode?: string; next?: string } => {
+    const out: { mode?: string; next?: string } = {};
+    if (typeof search["mode"] === "string") out.mode = search["mode"];
+    if (typeof search["next"] === "string") out.next = search["next"];
+    return out;
+  },
   component: AuthPage,
 });
 
-function goTo(target: string) {
-  if (target === "/account") return navigate({ to: "/account", replace: true });
-  if (target === "/reset-password") return navigate({ to: "/reset-password", replace: true });
-  return navigate({ to: "/", replace: true });
+function useGoAfterAuth() {
+  const go = useNavigate();
+  return useCallback(
+    (target: string) => {
+      if (target === "/account") return go({ to: "/account", replace: true });
+      if (target === "/reset-password") return go({ to: "/reset-password", replace: true });
+      return go({ to: "/", replace: true });
+    },
+    [go],
+  );
 }
 
 function readable(message: string): string {
@@ -46,6 +54,7 @@ function readable(message: string): string {
 
 function AuthPage() {
   const { mode: modeParam, next } = Route.useSearch();
+  const goTo = useGoAfterAuth();
   const [mode, setMode] = useState<"signin" | "signup">(modeParam === "signup" ? "signup" : "signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -64,7 +73,7 @@ function AuthPage() {
     return () => {
       active = false;
     };
-  }, [next]);
+  }, [next, goTo]);
 
   function afterSession() {
     void goTo(safeNext(next) ?? takeNext() ?? "/");
