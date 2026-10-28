@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/lib/auth-context";
 import { getTeacherHome } from "@/lib/account.functions";
 import { Button } from "@/components/ui/button";
 import { SessionMenu } from "@/components/session-menu";
 import { GraduationCap, BookOpen, UserRound } from "lucide-react";
 
-const teacherQuery = queryOptions({ queryKey: ["teacher-home"], queryFn: () => getTeacherHome() });
 export const Route = createFileRoute("/_authenticated/teacher")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(teacherQuery),
   head: () => ({ meta: [
     { title: "Teacher home — Mentora" },
     { name: "description", content: "Your teaching workspace and account on Mentora." },
@@ -21,7 +21,15 @@ export const Route = createFileRoute("/_authenticated/teacher")({
 });
 
 function TeacherHome() {
-  const { data } = useSuspenseQuery(teacherQuery);
+  const { user } = useAuth();
+  const fetchHome = useServerFn(getTeacherHome);
+  const { data, isPending, error } = useQuery({ queryKey: ["teacher-home", user?.id], queryFn: () => fetchHome(), enabled: Boolean(user), retry: false });
+  if (isPending) return <main className="mx-auto max-w-5xl px-6 py-12"><p className="text-muted-foreground">Loading your workspace…</p></main>;
+  if (error || !data) return <main className="mx-auto max-w-5xl px-6 py-12">
+    <h1 className="text-2xl font-semibold">Teacher account required</h1>
+    <p className="mt-3 text-muted-foreground">{error instanceof Error ? error.message : "Couldn’t load your workspace."}</p>
+    <Button asChild className="mt-6"><Link to="/">Back to the tutor</Link></Button>
+  </main>;
   return <div className="min-h-screen">
     <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-6">
       <Link to="/teacher" className="font-display text-xl font-semibold">Mentora <span className="ml-2 text-sm text-muted-foreground">Teachers</span></Link>

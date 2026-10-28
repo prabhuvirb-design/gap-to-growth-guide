@@ -16,3 +16,4 @@
 - Practice difficulty rules live in src/lib/adaptive.ts with tests; keeps adaptation logic testable.
 - Student/teacher categories are immutable rows in public.user_roles, read through authenticated server functions; self-selection never grants another user's data access.
 - Auth completes by checking the stored category before routing to the corresponding home; OAuth returns to the public auth page carrying the selected category.
+- Teacher workspace loads through useServerFn after the managed account gate and verifies its category on the server; query errors retain a visible return path.
