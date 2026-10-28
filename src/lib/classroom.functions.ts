@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { studentSchema, assignmentSchema, markSchema, validateMarks } from "@/lib/classroom";
+import { studentSchema, assignmentSchema, markSchema, removeStudentSchema, validateMarks } from "@/lib/classroom";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
