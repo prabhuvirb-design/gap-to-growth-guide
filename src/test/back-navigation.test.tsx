@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRouter, RouterContextProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -51,6 +52,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import type { ComponentType } from "react";
 import { Route } from "@/routes/index";
+import { routeTree } from "@/routeTree.gen";
 
 const Screen = Route.options.component as ComponentType;
 const menu = () => screen.getByRole("heading", { name: /the tutor that learns/i });
@@ -59,10 +61,13 @@ const option = (text: string) => fireEvent.click(screen.getByText(text).closest(
 
 function renderApp() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createRouter({ routeTree, context: { queryClient } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <Screen />
-    </QueryClientProvider>,
+    <RouterContextProvider router={router}>
+      <QueryClientProvider client={queryClient}>
+        <Screen />
+      </QueryClientProvider>
+    </RouterContextProvider>,
   );
 }
 
