@@ -62,7 +62,7 @@ function useGoAfterAuth() {
   );
 }
 
-function readable(message: string): string {
+export function readable(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "That email and password don’t match. Try again or reset your password.";
   if (m.includes("already registered")) return "That email already has an account — sign in instead.";
