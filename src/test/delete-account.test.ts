@@ -20,9 +20,9 @@ vi.mock("@tanstack/react-start", () => ({
 }));
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { auth: { admin: { deleteUser } } } }));
-import { deleteStudentAccount } from "@/lib/delete-account.functions";
+import { deleteOwnAccount } from "@/lib/delete-account.functions";
 
-const call = deleteStudentAccount as unknown as (args: unknown) => Promise<unknown>;
+const call = deleteOwnAccount as unknown as (args: unknown) => Promise<unknown>;
 function args(data: unknown = { confirmation: "DELETE" }) {
   return { data, context: { userId: "current-student", supabase: { from: () => ({ select: () => ({ eq: roleRead }) }) } } };
 }
@@ -33,7 +33,7 @@ beforeEach(() => {
   roleRead.mockImplementation(() => ({ maybeSingle: async () => ({ data: state.role ? { role: state.role } : null, error: state.error }) }));
   deleteUser.mockResolvedValue({ error: null });
 });
-describe("permanent student self-deletion", () => {
+describe("permanent account self-deletion", () => {
   it("hard-deletes only the authenticated student's identity", async () => {
     await expect(call(args())).resolves.toEqual({ deleted: true });
     expect(roleRead).toHaveBeenCalledWith("user_id", "current-student");
@@ -47,9 +47,27 @@ describe("permanent student self-deletion", () => {
     expect(() => call(args({ confirmation: "delete" }))).toThrow();
     expect(deleteUser).not.toHaveBeenCalled();
   });
-  it("rejects teacher accounts", async () => {
+  it("hard-deletes only the authenticated teacher's identity", async () => {
     state.role = "teacher";
-    await expect(call(args())).rejects.toThrow("Only a signed-in student");
+    const teacherArgs = args();
+    teacherArgs.context.userId = "current-teacher";
+    await expect(call(teacherArgs)).resolves.toEqual({ deleted: true });
+    expect(roleRead).toHaveBeenCalledWith("user_id", "current-teacher");
+    expect(deleteUser).toHaveBeenCalledExactlyOnceWith("current-teacher", false);
+  });
+  it("rejects a teacher attempting to supply another account ID", () => {
+    state.role = "teacher";
+    expect(() => call(args({ confirmation: "DELETE", userId: "another-teacher" }))).toThrow();
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+  it("rejects unrecognized account categories", async () => {
+    state.role = "admin";
+    await expect(call(args())).rejects.toThrow();
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+  it("does not delete when account category lookup fails", async () => {
+    state.error = new Error("lookup failed");
+    await expect(call(args())).rejects.toThrow();
     expect(deleteUser).not.toHaveBeenCalled();
   });
   it("rejects accounts without a stored student category", async () => {

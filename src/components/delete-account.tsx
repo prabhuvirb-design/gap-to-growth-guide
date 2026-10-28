@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { getAccountType } from "@/lib/account.functions";
-import { deleteStudentAccount } from "@/lib/delete-account.functions";
+import { deleteOwnAccount } from "@/lib/delete-account.functions";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,7 +15,7 @@ export function DeleteAccount() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fetchType = useServerFn(getAccountType);
-  const removeAccount = useServerFn(deleteStudentAccount);
+  const removeAccount = useServerFn(deleteOwnAccount);
   const accountType = useQuery({ queryKey: ["account-type", user?.id], queryFn: () => fetchType(), enabled: !!user });
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -43,17 +43,21 @@ export function DeleteAccount() {
     }
   }
 
-  if (accountType.data !== "student") return null;
+  if (accountType.data !== "student" && accountType.data !== "teacher") return null;
+  const teacher = accountType.data === "teacher";
+  const records = teacher
+    ? "profile, classroom student records, assignments, marks, feedback, saved diagnostics, and practice progress"
+    : "profile, saved diagnostics, and practice progress";
   return (
     <section className="border-t border-border pt-6 lg:col-span-2">
       <h2 className="text-xl font-semibold">Delete account</h2>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">Permanently remove your student account, profile, saved diagnostics, and practice progress. This cannot be undone.</p>
+      <p className="mt-2 max-w-xl text-sm text-muted-foreground">Permanently remove your {accountType.data} account, {records}. This cannot be undone.</p>
       <Button variant="destructive" className="mt-4" onClick={() => { setConfirmation(""); setError(""); setOpen(true); }}><Trash2 className="size-4" />Delete account</Button>
       <AlertDialog open={open} onOpenChange={(next) => { if (!busy) setOpen(next); }}>
         <AlertDialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete your student account permanently?</AlertDialogTitle>
-            <AlertDialogDescription>Your login, profile, all saved diagnostics, and practice progress will be deleted. Progress saved in this browser will also be cleared. You cannot recover this account.</AlertDialogDescription>
+            <AlertDialogTitle>Delete your {accountType.data} account permanently?</AlertDialogTitle>
+            <AlertDialogDescription>Your login, {records} will be deleted. Progress saved in this browser will also be cleared. You cannot recover this account.{teacher && " Separate student sign-in accounts will not be deleted."}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
             <Label htmlFor="delete-confirmation">Type DELETE to confirm</Label>
