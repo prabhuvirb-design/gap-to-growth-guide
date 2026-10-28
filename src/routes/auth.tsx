@@ -68,6 +68,8 @@ function readable(message: string): string {
   if (m.includes("already registered")) return "That email already has an account — sign in instead.";
   if (m.includes("confirm your email") || m.includes("not confirmed")) return "Confirm your email address first, then sign in.";
   if (m.includes("rate limit") || m.includes("too many")) return "Too many attempts. Wait a minute, then try again.";
+  if (m.includes("weak") || m.includes("easy to guess") || m.includes("compromised") || m.includes("pwned"))
+    return "That password is too easy to guess — it appears in known password lists. Pick a longer one that mixes words, numbers, and symbols.";
   if (m.includes("password")) return "Use at least 6 characters for your password.";
   return message;
 }
@@ -326,6 +328,12 @@ function AuthPage() {
                     minLength={6}
                     required
                   />
+                  {mode === "signup" && (
+                    <p className="text-xs text-muted-foreground">
+                      At least 6 characters, and not a common or leaked password — avoid things like
+                      “password123” or your name. A short phrase with a number works well.
+                    </p>
+                  )}
                 </div>
 
                 {error && <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
