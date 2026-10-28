@@ -283,7 +283,9 @@ function AuthPage() {
                 {ROLE_COPY[role].label} — change
               </button>
               <h2 className="mb-5 text-xl font-semibold">
-                {ROLE_COPY[role].label} {mode === "signin" ? "sign in" : "account creation"}
+                {mode === "signin"
+                  ? `${ROLE_COPY[role].label} sign in`
+                  : `Create a ${ROLE_COPY[role].label.toLowerCase()} account`}
               </h2>
 
               <form className="space-y-4" onSubmit={submit}>
