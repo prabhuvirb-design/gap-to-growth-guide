@@ -180,7 +180,7 @@ function QuestionCard({ q, onAnswer, label }: { q: Question; onAnswer: (idx: num
   );
 }
 
-function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a: Answer[]) => void; retry?: () => void }) {
+function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a: Answer[]) => void; retry?: (() => void) | undefined }) {
   const [i, setI] = useState(0);
   const [ans, setAns] = useState<Answer[]>([]);
   if (retry) return <div className="py-20 text-center"><Button onClick={retry}>Retry analysis</Button></div>;
