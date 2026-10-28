@@ -6,6 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { analyzeAnswers, generateAssessment, generatePractice, type Analysis, type Question } from "@/lib/tutor.functions";
 import { nextDifficulty, type Difficulty } from "@/lib/adaptive";
 
@@ -36,19 +40,38 @@ function App() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [answered, setAnswered] = useState(0);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const gen = useServerFn(generateAssessment);
   const analyze = useServerFn(analyzeAnswers);
+
+  const atHome = stage === "setup";
+  const busy = stage === "loading" || stage === "analyzing";
+
+  function home() {
+    setError(""); setConfirmLeave(false); setQuestions([]); setAnswers([]); setAnswered(0); setStage("setup");
+  }
+
+  function goHome() {
+    if (stage === "quiz" && answered > 0) setConfirmLeave(true); else home();
+  }
 
   useEffect(() => {
     try { setSessions(JSON.parse(localStorage.getItem(LS) || "[]")); } catch { /* empty */ }
   }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !atHome && !busy) goHome(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [atHome, busy, stage, answered]);
 
   async function start(t = topic) {
     if (t.trim().length < 2) return;
     setTopic(t); setError(""); setStage("loading");
     try {
       const q = await gen({ data: { topic: t, level } });
-      setQuestions(q.questions); setAnswers([]); setStage("quiz");
+      setQuestions(q.questions); setAnswers([]); setAnswered(0); setStage("quiz");
     } catch (e) { setError(errMsg(e)); setStage("setup"); }
   }
 
@@ -68,11 +91,18 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <button onClick={() => setStage("setup")} className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">m</span>
-          <span className="font-display text-xl font-semibold">Mentora</span>
-        </button>
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6">
+        <div className="flex items-center gap-3">
+          {!atHome && !busy && (
+            <Button variant="ghost" size="sm" onClick={goHome} className="-ml-3 gap-1.5 text-muted-foreground hover:text-foreground">
+              <span aria-hidden>←</span> Back to menu
+            </Button>
+          )}
+          <button onClick={goHome} className="flex items-center gap-2">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">m</span>
+            <span className="font-display text-xl font-semibold">Mentora</span>
+          </button>
+        </div>
         <span className="text-sm text-muted-foreground">{sessions.length} sessions tracked</span>
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
@@ -81,9 +111,23 @@ function App() {
         {(stage === "loading" || stage === "analyzing") && (
           <Thinking text={stage === "loading" ? `Designing a diagnostic for “${topic}”…` : "Mapping your knowledge and building your path…"} />
         )}
-        {stage === "quiz" && <Quiz questions={questions} onDone={(a) => { setAnswers(a); finish(a); }} retry={answers.length ? () => finish(answers) : undefined} />}
+        {stage === "quiz" && <Quiz questions={questions} onProgress={setAnswered} onDone={(a) => { setAnswers(a); finish(a); }} retry={answers.length ? () => finish(answers) : undefined} />}
         {stage === "results" && analysis && <Results topic={topic} analysis={analysis} restart={() => start(topic)} sessions={sessions} />}
       </main>
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave the check-up?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You’ve answered {answered} of {questions.length} questions. Going back to the menu now discards them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep going</AlertDialogCancel>
+            <AlertDialogAction onClick={home}>Back to menu</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -180,7 +224,7 @@ function QuestionCard({ q, onAnswer, label }: { q: Question; onAnswer: (idx: num
   );
 }
 
-function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a: Answer[]) => void; retry?: (() => void) | undefined }) {
+function Quiz({ questions, onProgress, onDone, retry }: { questions: Question[]; onProgress?: (n: number) => void; onDone: (a: Answer[]) => void; retry?: (() => void) | undefined }) {
   const [i, setI] = useState(0);
   const [ans, setAns] = useState<Answer[]>([]);
   if (retry) return <div className="py-20 text-center"><Button onClick={retry}>Retry analysis</Button></div>;
@@ -191,7 +235,7 @@ function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a:
       <Progress value={(i / questions.length) * 100} className="mb-6 h-2" />
       <QuestionCard q={q} label={`${i + 1} / ${questions.length}`} onAnswer={(idx, secs) => {
         const next = [...ans, { concept: q.concept, question: q.question, chosen: q.options[idx] ?? "", correct: q.options[q.correctIndex] ?? "", isCorrect: idx === q.correctIndex, difficulty: q.difficulty, seconds: Math.round(secs) }];
-        setAns(next);
+        setAns(next); onProgress?.(next.length);
         if (i + 1 < questions.length) setI(i + 1); else onDone(next);
       }} />
     </div>
