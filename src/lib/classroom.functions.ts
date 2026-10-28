@@ -27,6 +27,17 @@ export const addStudent = createServerFn({ method: "POST" }).middleware([require
   return { saved: true };
 });
 
+export const removeStudent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(removeStudentSchema).handler(async ({ data, context }) => {
+  await requireTeacher(context.supabase, context.userId);
+  // The row must be this teacher's own; an id alone never authorises a removal.
+  const owned = await context.supabase.from("teacher_students").select("id").eq("id", data.studentId).eq("teacher_id", context.userId).maybeSingle();
+  if (owned.error || !owned.data) throw new Error("Choose a student from your own classroom.");
+  const stored = await context.supabase.from("teacher_marks").select("id", { count: "exact", head: true }).eq("student_id", data.studentId).eq("teacher_id", context.userId);
+  const result = await context.supabase.from("teacher_students").delete().eq("id", data.studentId).eq("teacher_id", context.userId);
+  if (result.error) throw new Error("Couldn’t remove the student. Please retry.");
+  return { removed: true, marksRemoved: stored.count ?? 0 };
+});
+
 export const addAssignment = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(assignmentSchema).handler(async ({ data, context }) => {
   await requireTeacher(context.supabase, context.userId);
   const result = await context.supabase.from("teacher_assignments").insert({ teacher_id: context.userId, title: data.title, subject: data.subject, due_date: data.dueDate || null, max_marks: data.maxMarks });
