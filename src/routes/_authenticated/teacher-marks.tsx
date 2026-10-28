@@ -132,7 +132,7 @@ function MarkBook() {
           </div>
         ) : (
           <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-            <form onSubmit={submit} className="h-fit space-y-4 rounded-lg border border-border bg-card p-6">
+            <form onSubmit={submit} noValidate className="h-fit space-y-4 rounded-lg border border-border bg-card p-6">
               <div className="space-y-2">
                 <Label htmlFor="book-student">Student</Label>
                 <select id="book-student" value={studentId} onChange={(e) => pickStudent(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" required>

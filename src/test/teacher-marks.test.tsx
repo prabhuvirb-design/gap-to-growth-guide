@@ -109,7 +109,7 @@ describe("Mark book", () => {
     authState.session = { user: { id: "t1", email: "ada@school.edu" } };
     mount({ student: MAYA, assignment: ALGEBRA });
     const score = await screen.findByLabelText("Marks (out of 50)");
-    await waitFor(() => expect(score).toHaveValue("42"));
+    await waitFor(() => expect(score).toHaveValue(42));
     expect(screen.getByText(/Already stored: 42 \/ 50/)).toBeInTheDocument();
   });
 
