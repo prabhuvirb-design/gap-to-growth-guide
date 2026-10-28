@@ -133,8 +133,8 @@ describe("Classroom roster", () => {
     await screen.findByRole("heading", { name: "Maya Sharma", level: 3 });
     const link = card("Maya Sharma").getByRole("link", { name: `Edit marks for Maya Sharma — Algebra check-in` });
     expect(link).toHaveAttribute("href", expect.stringContaining("/teacher-marks"));
-    expect(link.getAttribute("href")).toContain(encodeURIComponent(`student=${MAYA}`));
-    expect(link.getAttribute("href")).toContain(encodeURIComponent(`assignment=${ALGEBRA}`));
+    expect(link.getAttribute("href")).toContain(`student=${MAYA}`);
+    expect(link.getAttribute("href")).toContain(`assignment=${ALGEBRA}`);
   });
 
   it("narrows the roster to the student being searched for", async () => {
