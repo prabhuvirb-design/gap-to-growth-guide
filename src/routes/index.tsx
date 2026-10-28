@@ -6,6 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { analyzeAnswers, generateAssessment, generatePractice, type Analysis, type Question } from "@/lib/tutor.functions";
 import { nextDifficulty, type Difficulty } from "@/lib/adaptive";
 
@@ -36,12 +40,31 @@ function App() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [answered, setAnswered] = useState(0);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const gen = useServerFn(generateAssessment);
   const analyze = useServerFn(analyzeAnswers);
+
+  const atHome = stage === "setup";
+  const busy = stage === "loading" || stage === "analyzing";
+
+  function home() {
+    setError(""); setConfirmLeave(false); setQuestions([]); setAnswers([]); setAnswered(0); setStage("setup");
+  }
+
+  function goHome() {
+    if (stage === "quiz" && answered > 0) setConfirmLeave(true); else home();
+  }
 
   useEffect(() => {
     try { setSessions(JSON.parse(localStorage.getItem(LS) || "[]")); } catch { /* empty */ }
   }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !atHome && !busy) goHome(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [atHome, busy, stage, answered]);
 
   async function start(t = topic) {
     if (t.trim().length < 2) return;
