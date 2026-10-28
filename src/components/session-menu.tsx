@@ -2,6 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getAccountType } from "@/lib/account.functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +18,8 @@ import {
 export function SessionMenu() {
   const { user, ready } = useAuth();
   const signOut = useSignOut();
+  const fetchRole = useServerFn(getAccountType);
+  const { data: role } = useQuery({ queryKey: ["account-type", user?.id], queryFn: () => fetchRole(), enabled: ready && Boolean(user) });
 
   if (!ready) return <span className="h-8 w-28 animate-pulse rounded-md bg-muted" aria-hidden />;
 
@@ -46,6 +51,7 @@ export function SessionMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {role === "teacher" && <DropdownMenuItem asChild><Link to="/teacher">Teacher home</Link></DropdownMenuItem>}
         <DropdownMenuItem asChild>
           <Link to="/account">Account & progress</Link>
         </DropdownMenuItem>

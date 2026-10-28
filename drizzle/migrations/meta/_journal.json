@@ -8,6 +8,13 @@
       "when": 1793166968535,
       "tag": "0000_learner_profiles_and_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793168177882,
+      "tag": "0001_student_teacher_accounts",
+      "breakpoints": true
     }
   ]
 }

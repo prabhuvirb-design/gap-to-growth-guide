@@ -14,3 +14,6 @@
 - Private data is only ever read or written through requireSupabaseAuth server functions, and signed-in-only pages live under src/routes/_authenticated/; keeps the browser from deciding who a learner is.
 - One onAuthStateChange listener in src/lib/auth-context.tsx owns session state for the whole app; keeps duplicate listeners from fighting over the cache.
 - Practice difficulty rules live in src/lib/adaptive.ts with tests; keeps adaptation logic testable.
+- Student/teacher categories are immutable rows in public.user_roles, read through authenticated server functions; self-selection never grants another user's data access.
+- Auth completes by checking the stored category before routing to the corresponding home; OAuth returns to the public auth page carrying the selected category.
+- Teacher workspace loads through useServerFn after the managed account gate and verifies its category on the server; query errors retain a visible return path.

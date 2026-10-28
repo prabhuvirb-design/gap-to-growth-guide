@@ -7,6 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { rememberNext, safeNext, takeNext } from "@/lib/redirect";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/lib/auth-context";
+import { claimAccountType } from "@/lib/account.functions";
+import { accountHome, matchesAccountType, type AccountType } from "@/lib/account-type";
+import { GraduationCap, School } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -18,11 +23,14 @@ export const Route = createFileRoute("/auth")({
       },
       { property: "og:title", content: "Sign in to Mentora" },
       { property: "og:description", content: "Keep your diagnostics, gaps, and learning path with you." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { mode?: string; next?: string } => {
-    const out: { mode?: string; next?: string } = {};
+  validateSearch: (search: Record<string, unknown>): { mode?: string; next?: string; role?: AccountType } => {
+    const out: { mode?: string; next?: string; role?: AccountType } = {};
+    if (search["role"] === "student" || search["role"] === "teacher") out.role = search["role"];
     if (typeof search["mode"] === "string") out.mode = search["mode"];
     if (typeof search["next"] === "string") out.next = search["next"];
     return out;
@@ -35,6 +43,7 @@ function useGoAfterAuth() {
   return useCallback(
     (target: string) => {
       if (target === "/account") return go({ to: "/account", replace: true });
+      if (target === "/teacher") return go({ to: "/teacher", replace: true });
       if (target === "/reset-password") return go({ to: "/reset-password", replace: true });
       return go({ to: "/", replace: true });
     },
@@ -53,8 +62,11 @@ function readable(message: string): string {
 }
 
 function AuthPage() {
-  const { mode: modeParam, next } = Route.useSearch();
+  const { mode: modeParam, next, role: roleParam } = Route.useSearch();
   const goTo = useGoAfterAuth();
+  const { user, ready } = useAuth();
+  const claimRole = useServerFn(claimAccountType);
+  const [role, setRole] = useState<AccountType>(roleParam ?? "student");
   const [mode, setMode] = useState<"signin" | "signup">(modeParam === "signup" ? "signup" : "signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,21 +75,23 @@ function AuthPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Someone who is already signed in has no business on this page.
+  // The stored account type, not the selected tab, decides access after authentication.
   useEffect(() => {
+    if (!ready || !user) return;
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active || !data.session) return;
-      void goTo(safeNext(next) ?? takeNext() ?? "/");
-    });
+    void claimRole({ data: { role } }).then((stored) => {
+      if (!active) return;
+      if (!matchesAccountType(stored, role)) {
+        setError(`This is a ${stored} account. Choose ${stored === "teacher" ? "Teacher" : "Student"} to continue.`);
+        return;
+      }
+      const target = safeNext(next) ?? takeNext();
+      void goTo(target === "/account" ? target : accountHome(stored));
+    }).catch(() => { if (active) setError("Couldn’t check your account type. Please try again."); });
     return () => {
       active = false;
     };
-  }, [next, goTo]);
-
-  function afterSession() {
-    void goTo(safeNext(next) ?? takeNext() ?? "/");
-  }
+  }, [ready, user?.id, role, next, goTo, claimRole]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -91,15 +105,14 @@ function AuthPage() {
           setError(readable(e.message));
           return;
         }
-        afterSession();
         return;
       }
       const { data, error: e } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}${safeNext(next) ?? "/"}`,
-          data: { display_name: name.trim() },
+          emailRedirectTo: `${window.location.origin}/auth?role=${role}`,
+          data: { display_name: name.trim(), account_type: role },
         },
       });
       if (e) {
@@ -109,9 +122,9 @@ function AuthPage() {
       if (!data.session) {
         setMode("signin");
         setNotice("We sent you a confirmation link — open it, then sign in.");
-      } else {
-        afterSession();
       }
+    } catch {
+      setError("Couldn’t connect. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -121,13 +134,12 @@ function AuthPage() {
     setError("");
     setNotice("");
     rememberNext(next);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth?role=${role}` });
     if (result.error) {
       setError(readable(result.error.message));
       return;
     }
     if (result.redirected) return;
-    afterSession();
   }
 
   async function reset() {
@@ -172,9 +184,11 @@ function AuthPage() {
         <Card className="rise p-8 shadow-soft">
           <div className="mb-6 flex gap-1 rounded-lg bg-muted p-1 text-sm">
             {(["signin", "signup"] as const).map((m) => (
-              <button
+              <Button
                 key={m}
                 type="button"
+                variant="ghost"
+                aria-pressed={mode === m}
                 onClick={() => {
                   setMode(m);
                   setError("");
@@ -185,9 +199,21 @@ function AuthPage() {
                 }`}
               >
                 {m === "signin" ? "Sign in" : "Create account"}
-              </button>
+              </Button>
             ))}
           </div>
+
+          <div className="mb-6 grid grid-cols-2 gap-3" role="group" aria-label="Account type">
+            {(["student", "teacher"] as const).map((type) => (
+              <Button key={type} type="button" variant={role === type ? "default" : "outline"}
+                className="h-14 gap-2" aria-pressed={role === type} disabled={busy}
+                onClick={() => { setRole(type); setError(""); setNotice(""); }}>
+                {type === "student" ? <GraduationCap /> : <School />}
+                {type === "student" ? "Student" : "Teacher"}
+              </Button>
+            ))}
+          </div>
+          <h2 className="mb-5 text-xl font-semibold">{role === "teacher" ? "Teacher" : "Student"} {mode === "signin" ? "sign in" : "account creation"}</h2>
 
           <form className="space-y-4" onSubmit={submit}>
             {mode === "signup" && (
@@ -233,18 +259,19 @@ function AuthPage() {
             {notice && <p className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{notice}</p>}
 
             <Button type="submit" size="lg" className="w-full" disabled={busy}>
-              {busy ? "One moment…" : mode === "signin" ? "Sign in" : "Create my account"}
+              {busy ? "One moment…" : mode === "signin" ? `Sign in as ${role}` : `Create ${role} account`}
             </Button>
           </form>
 
           {mode === "signin" && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => void reset()}
               className="mt-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-primary"
             >
               Reset password
-            </button>
+            </Button>
           )}
 
           <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
