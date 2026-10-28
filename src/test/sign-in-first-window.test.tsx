@@ -65,8 +65,8 @@ afterEach(() => {
 });
 
 describe("Sign-in first window", () => {
-  it("asks Student or Teacher before showing any form", () => {
-    renderAuth("?mode=signup");
+  it("asks Student or Teacher before showing any form", async () => {
+await renderAuth("?mode=signup");
 
     expect(screen.getByRole("heading", { name: /who is creating an account\?/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /student/i })).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("Sign-in first window", () => {
   });
 
   it("opens the chosen account's form and keeps the choice in the address", async () => {
-    const { router } = renderAuth();
+    const { router } = await renderAuth();
 
     fireEvent.click(screen.getByRole("button", { name: /teacher/i }));
 
@@ -85,7 +85,7 @@ describe("Sign-in first window", () => {
   });
 
   it("returns to the choice window from “change”", async () => {
-    renderAuth();
+await renderAuth();
 
     fireEvent.click(screen.getByRole("button", { name: /student/i }));
     await screen.findByLabelText("Email");
@@ -99,7 +99,7 @@ describe("Sign-in first window", () => {
   it("claims nothing for a signed-in learner who has not chosen yet", async () => {
     authState.session = { user: { id: "u1", email: "ada@school.edu" } };
 
-    renderAuth();
+await renderAuth();
     await waitFor(() => expect(screen.getByRole("button", { name: /teacher/i })).toBeInTheDocument());
 
     expect(claimAccountType).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe("Sign-in first window", () => {
   it("claims the chosen type for a signed-in learner", async () => {
     authState.session = { user: { id: "u1", email: "ada@school.edu" } };
 
-    renderAuth("?role=teacher");
+await renderAuth("?role=teacher");
 
     await waitFor(() => expect(claimAccountType).toHaveBeenCalled());
     expect(claimAccountType).toHaveBeenCalledWith({ data: { role: "teacher" } });
