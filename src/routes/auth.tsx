@@ -335,8 +335,8 @@ function AuthPage() {
                   {busy
                     ? "One moment…"
                     : mode === "signin"
-                      ? `Sign in as ${ROLE_COPY[role].label}`
-                      : `Create ${ROLE_COPY[role].label} account`}
+                      ? `Sign in as ${ROLE_COPY[role].label.toLowerCase()}`
+                      : `Create ${ROLE_COPY[role].label.toLowerCase()} account`}
                 </Button>
               </form>
 
