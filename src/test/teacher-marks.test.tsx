@@ -3,7 +3,7 @@
 // it must land against the chosen student/assignment pair, and an existing record must be shown
 // before it is overwritten.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createMemoryHistory, createRouter, RouterContextProvider } from "@tanstack/react-router";
+import { createMemoryHistory, createRouter, rootRouteId, RouterContextProvider } from "@tanstack/react-router";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -102,7 +102,7 @@ afterEach(() => {
 describe("Mark book", () => {
   it("serves the mark book at /teacher-marks", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
-    expect(router.matchRoutes("/teacher-marks").at(-1)?.routeId).not.toBe("rootRouteId");
+    expect(router.matchRoutes("/teacher-marks").at(-1)?.routeId).not.toBe(rootRouteId);
   });
 
   it("shows the marks already stored before overwriting them", async () => {
