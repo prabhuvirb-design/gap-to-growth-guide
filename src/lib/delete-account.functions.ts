@@ -2,15 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Deletes only the authenticated student; linked learning records cascade atomically. */
-export const deleteStudentAccount = createServerFn({ method: "POST" })
+/** Deletes only the authenticated account; learning and classroom records cascade atomically. */
+export const deleteOwnAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ confirmation: z.literal("DELETE") }).strict())
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.from("user_roles")
       .select("role").eq("user_id", context.userId).maybeSingle();
-    if (error || data?.role !== "student") {
-      throw new Error("Only a signed-in student can delete their own account here.");
+    if (error || (data?.role !== "student" && data?.role !== "teacher")) {
+      throw new Error("Only a signed-in student or teacher can delete their own account here.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const result = await supabaseAdmin.auth.admin.deleteUser(context.userId, false);

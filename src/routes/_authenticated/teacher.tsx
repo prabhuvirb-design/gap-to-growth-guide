@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SessionMenu } from "@/components/session-menu";
 import { GraduationCap, BookOpen, UserRound } from "lucide-react";
 import { TeacherClassroom } from "@/components/teacher-classroom";
+import { DeleteAccount } from "@/components/delete-account";
 
 export const Route = createFileRoute("/_authenticated/teacher")({
   head: () => ({ meta: [
@@ -46,6 +47,7 @@ function TeacherHome() {
         <Button asChild variant="outline" size="lg"><Link to="/account"><UserRound />My profile</Link></Button>
       </div>
       <TeacherClassroom />
+      <div className="mt-12"><DeleteAccount /></div>
     </main>
   </div>;
 }
