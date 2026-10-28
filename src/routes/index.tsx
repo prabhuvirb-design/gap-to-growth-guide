@@ -106,7 +106,13 @@ function App() {
         <span className="text-sm text-muted-foreground">{sessions.length} sessions tracked</span>
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
-        ...
+        {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
+        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions }} />}
+        {(stage === "loading" || stage === "analyzing") && (
+          <Thinking text={stage === "loading" ? `Designing a diagnostic for “${topic}”…` : "Mapping your knowledge and building your path…"} />
+        )}
+        {stage === "quiz" && <Quiz questions={questions} onProgress={setAnswered} onDone={(a) => { setAnswers(a); finish(a); }} retry={answers.length ? () => finish(answers) : undefined} />}
+        {stage === "results" && analysis && <Results topic={topic} analysis={analysis} restart={() => start(topic)} sessions={sessions} />}
       </main>
       <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
         <AlertDialogContent>
