@@ -14,7 +14,127 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      learning_sessions: {
+        Row: {
+          created_at: string
+          feedback: Json
+          gaps: Json
+          id: string
+          learning_style: string
+          level: string
+          mastery: Json
+          overall: number
+          path: Json
+          session_date: string
+          summary: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: Json
+          gaps?: Json
+          id?: string
+          learning_style?: string
+          level?: string
+          mastery?: Json
+          overall?: number
+          path?: Json
+          session_date?: string
+          summary?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: Json
+          gaps?: Json
+          id?: string
+          learning_style?: string
+          level?: string
+          mastery?: Json
+          overall?: number
+          path?: Json
+          session_date?: string
+          summary?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_progress: {
+        Row: {
+          attempted: number
+          concept: string
+          correct: number
+          difficulty: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempted?: number
+          concept: string
+          correct?: number
+          difficulty?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempted?: number
+          concept?: string
+          correct?: number
+          difficulty?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          level: string
+          preferred_subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          level?: string
+          preferred_subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          level?: string
+          preferred_subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
