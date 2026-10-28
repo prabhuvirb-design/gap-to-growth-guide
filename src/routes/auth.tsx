@@ -106,16 +106,24 @@ function AuthPage() {
     };
   }, [ready, user?.id, role, next, goTo, claimRole]);
 
+  // Optional search params stay out of the object entirely: the router's types reject explicit undefined.
+  function authSearch(mode: "signin" | "signup", type?: AccountType, to?: string) {
+    const search: { mode: string; role?: AccountType; next?: string } = { mode };
+    if (type) search.role = type;
+    if (to) search.next = to;
+    return search;
+  }
+
   function openRole(type: AccountType) {
     setError("");
     setNotice("");
-    void navigate({ to: "/auth", search: { mode, role: type, next } });
+    void navigate({ to: "/auth", search: authSearch(mode, type, next) });
   }
 
   function backToRolePicker() {
     setError("");
     setNotice("");
-    void navigate({ to: "/auth", search: { mode, next } });
+    void navigate({ to: "/auth", search: authSearch(mode, undefined, next) });
   }
 
   function switchMode(m: "signin" | "signup") {
