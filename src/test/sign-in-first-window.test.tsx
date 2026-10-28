@@ -46,16 +46,15 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { routeTree } from "@/routeTree.gen";
 
-function renderAuth(search = "") {
+async function renderAuth(search = "") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: [`/auth${search}`] }),
     context: { queryClient },
   });
-  const view = render(
-    <RouterProvider router={router} />
-  );
+  await router.start();
+  const view = render(<RouterProvider router={router} />);
   return { ...view, router };
 }
 
