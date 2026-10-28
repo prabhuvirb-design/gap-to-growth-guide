@@ -31,7 +31,7 @@ const LS = "mentora-sessions";
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
 
-function App() {
+export function App() {
   const [stage, setStage] = useState<"setup" | "loading" | "quiz" | "analyzing" | "results">("setup");
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("Beginner");
