@@ -11,7 +11,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { claimAccountType } from "@/lib/account.functions";
 import { accountHome, matchesAccountType, type AccountType } from "@/lib/account-type";
-import { GraduationCap, School } from "lucide-react";
+import { ArrowLeft, GraduationCap, School } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -37,6 +37,17 @@ export const Route = createFileRoute("/auth")({
   },
   component: AuthPage,
 });
+
+const ROLE_COPY: Record<AccountType, { label: string; blurb: string }> = {
+  student: {
+    label: "Student",
+    blurb: "Get a diagnostic, see your knowledge gaps, and follow a path built for you.",
+  },
+  teacher: {
+    label: "Teacher",
+    blurb: "Open the class view: who is stuck, on what, and the idea the group keeps missing.",
+  },
+};
 
 function useGoAfterAuth() {
   const go = useNavigate();
@@ -64,9 +75,11 @@ function readable(message: string): string {
 function AuthPage() {
   const { mode: modeParam, next, role: roleParam } = Route.useSearch();
   const goTo = useGoAfterAuth();
+  const navigate = useNavigate();
   const { user, ready } = useAuth();
   const claimRole = useServerFn(claimAccountType);
-  const [role, setRole] = useState<AccountType>(roleParam ?? "student");
+  // The account type is the first window: no role in the address bar means the picker is showing.
+  const role = roleParam ?? null;
   const [mode, setMode] = useState<"signin" | "signup">(modeParam === "signup" ? "signup" : "signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -77,7 +90,7 @@ function AuthPage() {
 
   // The stored account type, not the selected tab, decides access after authentication.
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready || !user || !role) return;
     let active = true;
     void claimRole({ data: { role } }).then((stored) => {
       if (!active) return;
@@ -93,8 +106,35 @@ function AuthPage() {
     };
   }, [ready, user?.id, role, next, goTo, claimRole]);
 
+  // Optional search params stay out of the object entirely: the router's types reject explicit undefined.
+  function authSearch(mode: "signin" | "signup", type?: AccountType, to?: string) {
+    const search: { mode: string; role?: AccountType; next?: string } = { mode };
+    if (type) search.role = type;
+    if (to) search.next = to;
+    return search;
+  }
+
+  function openRole(type: AccountType) {
+    setError("");
+    setNotice("");
+    void navigate({ to: "/auth", search: authSearch(mode, type, next) });
+  }
+
+  function backToRolePicker() {
+    setError("");
+    setNotice("");
+    void navigate({ to: "/auth", search: authSearch(mode, undefined, next) });
+  }
+
+  function switchMode(m: "signin" | "signup") {
+    setMode(m);
+    setError("");
+    setNotice("");
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (!role) return;
     setError("");
     setNotice("");
     setBusy(true);
@@ -111,7 +151,7 @@ function AuthPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth?role=${role}`,
+          emailRedirectTo: `${window.location.origin}/auth?role=${role}&mode=${mode}`,
           data: { display_name: name.trim(), account_type: role },
         },
       });
@@ -131,10 +171,13 @@ function AuthPage() {
   }
 
   async function google() {
+    if (!role) return;
     setError("");
     setNotice("");
     rememberNext(next);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth?role=${role}` });
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/auth?role=${role}&mode=${mode}`,
+    });
     if (result.error) {
       setError(readable(result.error.message));
       return;
@@ -189,11 +232,7 @@ function AuthPage() {
                 type="button"
                 variant="ghost"
                 aria-pressed={mode === m}
-                onClick={() => {
-                  setMode(m);
-                  setError("");
-                  setNotice("");
-                }}
+                onClick={() => switchMode(m)}
                 className={`flex-1 rounded-md px-3 py-2 font-medium transition ${
                   mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -203,90 +242,130 @@ function AuthPage() {
             ))}
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3" role="group" aria-label="Account type">
-            {(["student", "teacher"] as const).map((type) => (
-              <Button key={type} type="button" variant={role === type ? "default" : "outline"}
-                className="h-14 gap-2" aria-pressed={role === type} disabled={busy}
-                onClick={() => { setRole(type); setError(""); setNotice(""); }}>
-                {type === "student" ? <GraduationCap /> : <School />}
-                {type === "student" ? "Student" : "Teacher"}
-              </Button>
-            ))}
-          </div>
-          <h2 className="mb-5 text-xl font-semibold">{role === "teacher" ? "Teacher" : "Student"} {mode === "signin" ? "sign in" : "account creation"}</h2>
-
-          <form className="space-y-4" onSubmit={submit}>
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Your name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Alex"
-                  autoComplete="name"
-                  required
-                />
+          {!role ? (
+            <>
+              <h2 className="text-xl font-semibold">{mode === "signup" ? "Who is creating an account?" : "Who is signing in?"}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Choose Student or Teacher first — each one opens a different home.
+              </p>
+              <div className="mt-6 grid gap-3" role="group" aria-label="Account type">
+                {(["student", "teacher"] as const).map((type) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant="outline"
+                    className="h-auto gap-4 border-border/70 p-5 text-left transition hover:border-primary hover:bg-primary/5"
+                    onClick={() => openRole(type)}
+                  >
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                      {type === "student" ? <GraduationCap className="h-5 w-5" /> : <School className="h-5 w-5" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-display text-lg font-semibold">{ROLE_COPY[type].label}</span>
+                      <span className="mt-1 block text-sm font-normal leading-snug text-muted-foreground">
+                        {ROLE_COPY[type].blurb}
+                      </span>
+                    </span>
+                  </Button>
+                ))}
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                minLength={6}
-                required
-              />
-            </div>
+              {error && <p className="mt-5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+              {notice && <p className="mt-5 rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{notice}</p>}
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={backToRolePicker}
+                className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {ROLE_COPY[role].label} — change
+              </button>
+              <h2 className="mb-5 text-xl font-semibold">
+                {mode === "signin"
+                  ? `${ROLE_COPY[role].label} sign in`
+                  : `Create a ${ROLE_COPY[role].label.toLowerCase()} account`}
+              </h2>
 
-            {error && <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-            {notice && <p className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{notice}</p>}
+              <form className="space-y-4" onSubmit={submit}>
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Your name</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Alex"
+                      autoComplete="name"
+                      required
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    minLength={6}
+                    required
+                  />
+                </div>
 
-            <Button type="submit" size="lg" className="w-full" disabled={busy}>
-              {busy ? "One moment…" : mode === "signin" ? `Sign in as ${role}` : `Create ${role} account`}
-            </Button>
-          </form>
+                {error && <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+                {notice && <p className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{notice}</p>}
 
-          {mode === "signin" && (
-            <Button
-              type="button"
-              variant="link"
-              onClick={() => void reset()}
-              className="mt-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-primary"
-            >
-              Reset password
-            </Button>
+                <Button type="submit" size="lg" className="w-full" disabled={busy}>
+                  {busy
+                    ? "One moment…"
+                    : mode === "signin"
+                      ? `Sign in as ${ROLE_COPY[role].label.toLowerCase()}`
+                      : `Create ${ROLE_COPY[role].label.toLowerCase()} account`}
+                </Button>
+              </form>
+
+              {mode === "signin" && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => void reset()}
+                  className="mt-3 text-sm text-muted-foreground underline underline-offset-4 hover:text-primary"
+                >
+                  Reset password
+                </Button>
+              )}
+
+              <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => void google()}>
+                <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" aria-hidden>
+                  <path
+                    fill="currentColor"
+                    d="M12 10.2v3.9h5.5c-.24 1.4-1.66 4.1-5.5 4.1-3.3 0-6-2.73-6-6.1s2.7-6.1 6-6.1c1.9 0 3.17.8 3.9 1.5l2.66-2.56C16.8 3.2 14.6 2.2 12 2.2 6.9 2.2 2.8 6.3 2.8 11.4S6.9 20.6 12 20.6c5.5 0 9.13-3.86 9.13-9.3 0-.63-.07-1.1-.16-1.1H12z"
+                  />
+                </svg>
+                Continue with Google
+              </Button>
+            </>
           )}
-
-          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => void google()}>
-            <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" aria-hidden>
-              <path
-                fill="currentColor"
-                d="M12 10.2v3.9h5.5c-.24 1.4-1.66 4.1-5.5 4.1-3.3 0-6-2.73-6-6.1s2.7-6.1 6-6.1c1.9 0 3.17.8 3.9 1.5l2.66-2.56C16.8 3.2 14.6 2.2 12 2.2 6.9 2.2 2.8 6.3 2.8 11.4S6.9 20.6 12 20.6c5.5 0 9.13-3.86 9.13-9.3 0-.63-.07-1.1-.16-1.1H12z"
-              />
-            </svg>
-            Continue with Google
-          </Button>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             <Link to="/" className="underline underline-offset-4 hover:text-primary">
