@@ -10,11 +10,12 @@ import { studentSchema, assignmentSchema, removeStudentSchema } from "@/lib/clas
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 
 type Mode = "student" | "assignment";
+
+/** The classroom roster: every student's assignments and marks sit beside their own name. */
 export function TeacherClassroom() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -24,7 +25,6 @@ export function TeacherClassroom() {
   const dropStudent = useServerFn(removeStudent);
   const queryKey = ["classroom", user?.id];
   const query = useQuery({ queryKey, queryFn: () => fetchClassroom(), enabled: !!user, retry: false });
-  const [tab, setTab] = useState("students");
   const [mode, setMode] = useState<Mode | null>(null);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,6 +42,9 @@ export function TeacherClassroom() {
   function open(next: Mode) {
     setMode(next); setError("");
   }
+  function markFor(studentId: string, assignmentId: string) {
+    return marks.find((m) => m.student_id === studentId && m.assignment_id === assignmentId);
+  }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !mode) return;
     const form = new FormData(event.currentTarget);
@@ -50,7 +53,6 @@ export function TeacherClassroom() {
       if (mode === "student") await createStudent({ data: studentSchema.parse({ name: form.get("name"), className: form.get("className") }) });
       else await createAssignment({ data: assignmentSchema.parse({ title: form.get("title"), subject: form.get("subject"), dueDate: form.get("dueDate"), maxMarks: Number(form.get("maxMarks")) }) });
       await queryClient.invalidateQueries({ queryKey });
-      setTab(mode === "student" ? "students" : "assignments");
       setMode(null); toast.success("Saved to your classroom.");
     } catch (e) { setError(e instanceof Error ? e.message : "Couldn’t save. Please retry."); }
     finally { setBusy(false); }
@@ -77,19 +79,42 @@ export function TeacherClassroom() {
       </div>
     </div>
     {query.isPending ? <p className="py-10 text-muted-foreground">Loading classroom…</p> : query.error ? <div className="py-8"><p role="alert">{query.error.message}</p><Button className="mt-4" variant="outline" onClick={() => void query.refetch()}>Retry</Button></div> :
-    <Tabs value={tab} onValueChange={setTab} className="mt-6">
-      <TabsList><TabsTrigger value="students">Students</TabsTrigger><TabsTrigger value="assignments">Assignments</TabsTrigger><TabsTrigger value="marks">Marks</TabsTrigger></TabsList>
-      <TabsContent value="students" className="pt-4">
-        <div className="relative mb-5 max-w-sm"><Search className="absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search students" placeholder="Search students or class" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
-        {!visibleStudents.length ? <Empty icon={<Users />} text={students.length ? "No matching students." : "No students added yet."} /> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-border text-muted-foreground"><tr><th className="py-3 pr-4">Student</th><th className="py-3 pr-4">Class / group</th><th className="py-3 pr-4">Marks recorded</th><th className="py-3">Remove</th></tr></thead><tbody>{visibleStudents.map((s) => <tr key={s.id} className="border-b border-border"><td className="py-4 pr-4 font-medium">{s.name}</td><td className="py-4 pr-4 text-muted-foreground">{s.class_name || "—"}</td><td className="py-4 pr-4">{marks.filter((m) => m.student_id === s.id).length}</td><td className="py-4"><Button variant="ghost" size="icon" aria-label={`Remove ${s.name}`} title="Remove student" className="text-destructive hover:text-destructive" disabled={removing} onClick={() => { setRemoveError(""); setRemoveTarget(s.id); }}><Trash2 className="size-4" /></Button></td></tr>)}</tbody></table></div>}
-      </TabsContent>
-      <TabsContent value="assignments" className="pt-4">
-        {!assignments.length ? <Empty icon={<ClipboardList />} text="No assignments added yet." /> : <div className="grid gap-4 sm:grid-cols-2">{assignments.map((a) => <article key={a.id} className="rounded-lg border border-border bg-card p-5"><p className="text-xs font-medium text-primary">{a.subject || "Assignment"}</p><h3 className="mt-2 break-words text-lg font-semibold">{a.title}</h3><div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"><span>Maximum: {a.max_marks}</span><span>Due: {a.due_date || "Not set"}</span></div><p className="mt-2 text-sm text-muted-foreground">{marks.filter((m) => m.assignment_id === a.id).length} / {students.length} marked</p></article>)}</div>}
-      </TabsContent>
-      <TabsContent value="marks" className="pt-4">
-        {!marks.length ? <div className="flex min-h-44 flex-col items-center justify-center gap-3 border-b border-border text-muted-foreground"><BookMarked /><p className="text-sm">No marks stored yet.</p><Button asChild variant="outline" className="mt-1"><Link to="/teacher-marks">Open the mark book</Link></Button></div> : <div className="overflow-x-auto"><table className="w-full min-w-[580px] text-left text-sm"><thead className="border-b border-border text-muted-foreground"><tr>{["Student", "Assignment", "Marks", "Feedback", ""].map((h) => <th key={h} className="py-3 pr-4">{h}</th>)}</tr></thead><tbody>{marks.map((m) => <tr key={m.id} className="border-b border-border"><td className="py-4 pr-4">{students.find((s) => s.id === m.student_id)?.name}</td><td className="py-4 pr-4">{assignments.find((a) => a.id === m.assignment_id)?.title}</td><td className="whitespace-nowrap py-4 pr-4 font-medium text-primary">{m.marks} / {assignments.find((a) => a.id === m.assignment_id)?.max_marks}</td><td className="max-w-xs break-words py-4 pr-4 text-muted-foreground">{m.feedback || "—"}</td><td><Button asChild variant="ghost" size="icon" aria-label={`Edit marks for ${students.find((s) => s.id === m.student_id)?.name}`} title="Edit marks"><Link to="/teacher-marks" search={{ student: m.student_id, assignment: m.assignment_id }}><Pencil className="size-4" /></Link></Button></td></tr>)}</tbody></table></div>}
-      </TabsContent>
-    </Tabs>}
+    <div className="mt-6">
+      <div className="relative mb-5 max-w-sm"><Search className="absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label="Search students" placeholder="Search students or class" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
+      {!visibleStudents.length ? <Empty icon={<Users />} text={students.length ? "No matching students." : "No students added yet."} /> :
+      <div className="space-y-4">
+        {visibleStudents.map((s) => {
+          const marked = assignments.filter((a) => markFor(s.id, a.id)).length;
+          return <article key={s.id} className="rounded-lg border border-border bg-card p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="break-words text-lg font-semibold">{s.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{s.class_name || "No class set"} · {marked} of {assignments.length} {assignments.length === 1 ? "assignment" : "assignments"} marked</p>
+              </div>
+              <Button variant="ghost" size="icon" aria-label={`Remove ${s.name}`} title="Remove student" className="text-destructive hover:text-destructive" disabled={removing} onClick={() => { setRemoveError(""); setRemoveTarget(s.id); }}><Trash2 className="size-4" /></Button>
+            </div>
+            {!assignments.length ? <p className="mt-4 flex items-center gap-2 border-t border-border pt-4 text-sm text-muted-foreground"><ClipboardList className="size-4" />Add an assignment before recording marks.</p> :
+            <ul className="mt-4 divide-y divide-border border-t border-border">
+              {assignments.map((a) => {
+                const stored = markFor(s.id, a.id);
+                return <li key={a.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-medium">{a.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{a.subject || "Assignment"} · out of {a.max_marks}{a.due_date ? ` · due ${a.due_date}` : ""}{stored?.feedback ? ` · ${stored.feedback}` : ""}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={stored ? "whitespace-nowrap font-medium text-primary" : "whitespace-nowrap text-sm text-muted-foreground"}>{stored ? `${stored.marks} / ${a.max_marks}` : "Not marked"}</span>
+                    <Button asChild variant="ghost" size="icon" aria-label={`${stored ? "Edit" : "Enter"} marks for ${s.name} — ${a.title}`} title={stored ? "Edit marks" : "Enter marks"}>
+                      <Link to="/teacher-marks" search={{ student: s.id, assignment: a.id }}><Pencil className="size-4" /></Link>
+                    </Button>
+                  </div>
+                </li>;
+              })}
+            </ul>}
+          </article>;
+        })}
+      </div>}
+    </div>}
     <Dialog open={mode !== null} onOpenChange={(next) => { if (!next && !busy) setMode(null); }}>
       <DialogContent className="max-h-[90dvh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader><DialogTitle>{mode === "student" ? "Add student" : "Add assignment"}</DialogTitle><DialogDescription>{mode === "student" ? "Student record for your classroom only; no sign-in account is created." : "Assignment details"}</DialogDescription></DialogHeader>
