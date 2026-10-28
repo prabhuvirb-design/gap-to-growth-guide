@@ -91,22 +91,37 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <button onClick={() => setStage("setup")} className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">m</span>
-          <span className="font-display text-xl font-semibold">Mentora</span>
-        </button>
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6">
+        <div className="flex items-center gap-3">
+          {!atHome && !busy && (
+            <Button variant="ghost" size="sm" onClick={goHome} className="-ml-3 gap-1.5 text-muted-foreground hover:text-foreground">
+              <span aria-hidden>←</span> Back to menu
+            </Button>
+          )}
+          <button onClick={goHome} className="flex items-center gap-2">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground">m</span>
+            <span className="font-display text-xl font-semibold">Mentora</span>
+          </button>
+        </div>
         <span className="text-sm text-muted-foreground">{sessions.length} sessions tracked</span>
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
-        {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
-        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions }} />}
-        {(stage === "loading" || stage === "analyzing") && (
-          <Thinking text={stage === "loading" ? `Designing a diagnostic for “${topic}”…` : "Mapping your knowledge and building your path…"} />
-        )}
-        {stage === "quiz" && <Quiz questions={questions} onDone={(a) => { setAnswers(a); finish(a); }} retry={answers.length ? () => finish(answers) : undefined} />}
-        {stage === "results" && analysis && <Results topic={topic} analysis={analysis} restart={() => start(topic)} sessions={sessions} />}
+        ...
       </main>
+      <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave the check-up?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You’ve answered {answered} of {questions.length} questions. Going back to the menu now discards them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep going</AlertDialogCancel>
+            <AlertDialogAction onClick={home}>Back to menu</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
