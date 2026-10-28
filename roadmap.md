@@ -1,0 +1,3 @@
+- [ ] Add persisted student/teacher account types with protected access.
+- [ ] Add Student and Teacher options to sign-in and account creation, including Google.
+- [ ] Add a separate teacher home and verify both account paths.
