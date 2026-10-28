@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { studentSchema, assignmentSchema, markSchema, validateMarks } from "@/lib/classroom";
+import { studentSchema, assignmentSchema, markSchema, removeStudentSchema, validateMarks } from "@/lib/classroom";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -25,6 +25,17 @@ export const addStudent = createServerFn({ method: "POST" }).middleware([require
   const result = await context.supabase.from("teacher_students").insert({ teacher_id: context.userId, name: data.name, class_name: data.className });
   if (result.error) throw new Error("Couldn’t add the student. Please retry.");
   return { saved: true };
+});
+
+export const removeStudent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(removeStudentSchema).handler(async ({ data, context }) => {
+  await requireTeacher(context.supabase, context.userId);
+  // The row must be this teacher's own; an id alone never authorises a removal.
+  const owned = await context.supabase.from("teacher_students").select("id").eq("id", data.studentId).eq("teacher_id", context.userId).maybeSingle();
+  if (owned.error || !owned.data) throw new Error("Choose a student from your own classroom.");
+  const stored = await context.supabase.from("teacher_marks").select("id", { count: "exact", head: true }).eq("student_id", data.studentId).eq("teacher_id", context.userId);
+  const result = await context.supabase.from("teacher_students").delete().eq("id", data.studentId).eq("teacher_id", context.userId);
+  if (result.error) throw new Error("Couldn’t remove the student. Please retry.");
+  return { removed: true, marksRemoved: stored.count ?? 0 };
 });
 
 export const addAssignment = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(assignmentSchema).handler(async ({ data, context }) => {
