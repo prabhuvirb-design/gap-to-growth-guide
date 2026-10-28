@@ -7,3 +7,4 @@
 - [x] Add and verify permanent student self-deletion with confirmation and full learning-data removal.
 - [x] Add teacher-owned students, assignments, and marks with entry windows and saved records; verified creation, score limits, editing, and persistence.
 - [x] Add and verify permanent teacher self-deletion with full classroom and learning-data removal; other accounts remain unchanged.
+- [ ] Restore a main-screen login entry, first show Student/Teacher choices, and provide separate Google-only login pages.

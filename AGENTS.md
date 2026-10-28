@@ -15,7 +15,7 @@
 - One onAuthStateChange listener in src/lib/auth-context.tsx owns session state for the whole app; keeps duplicate listeners from fighting over the cache.
 - Practice difficulty rules live in src/lib/adaptive.ts with tests; keeps adaptation logic testable.
 - Student/teacher categories are immutable rows in public.user_roles, read through authenticated server functions; self-selection never grants another user's data access.
-- Auth completes by checking the stored category before routing to the corresponding home; OAuth returns to the public auth page carrying the selected category.
+- Auth begins at the public category picker and uses separate public student/teacher login routes sharing GoogleLogin; OAuth returns to the chosen login route and verifies the stored category before routing to its home, so category selection cannot change access.
 - Teacher workspace loads through useServerFn after the managed account gate and verifies its category on the server; query errors retain a visible return path.
 - Permanent account self-deletion verifies the caller's stored student or teacher role, deletes only context.userId through the server-only auth admin client, and relies on verified cascading foreign keys for atomic learning and classroom-data removal; both the account page and teacher workspace use the same confirmation control.
 - Classroom rosters are teacher-owned records, not linked learner accounts; authenticated teacher functions and owner/role RLS protect students, assignments and marks, with composite foreign keys keeping each result within one teacher's classroom.

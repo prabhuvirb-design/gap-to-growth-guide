@@ -30,9 +30,6 @@ export function SessionMenu({ hideSignedOut = false }: { hideSignedOut?: boolean
         <Button asChild size="sm" variant="outline">
           <Link to="/auth">Sign in</Link>
         </Button>
-        <Button asChild size="sm">
-          <Link to="/auth" search={{ mode: "signup" }}>Create account</Link>
-        </Button>
       </div>
     );
   }
