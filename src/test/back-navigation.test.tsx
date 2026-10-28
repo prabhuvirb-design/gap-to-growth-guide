@@ -25,8 +25,10 @@ vi.mock("@/lib/tutor.functions", () => ({
 // The app reads server functions through useServerFn; here they are plain fns.
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 
-import { App } from "@/routes/index";
+import type { ComponentType } from "react";
+import { Route } from "@/routes/index";
 
+const Screen = Route.options.component as ComponentType;
 const menu = () => screen.getByRole("heading", { name: /the tutor that learns/i });
 const atMenu = () => !!screen.queryByRole("heading", { name: /the tutor that learns/i });
 const option = (text: string) => fireEvent.click(screen.getByText(text).closest("button")!);
