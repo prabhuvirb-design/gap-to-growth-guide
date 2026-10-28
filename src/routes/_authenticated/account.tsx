@@ -14,6 +14,7 @@ import { useProgress } from "@/hooks/use-progress";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { getProfile, listPractice, updateProfile } from "@/lib/progress.functions";
 import { formatDate } from "@/lib/utils";
+import { DeleteAccount } from "@/components/delete-account";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -191,6 +192,7 @@ function AccountPage() {
             )}
           </Card>
         </div>
+        <DeleteAccount />
       </main>
     </div>
   );
