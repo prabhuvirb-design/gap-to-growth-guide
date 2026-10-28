@@ -40,6 +40,7 @@ export function TeacherClassroom() {
 
   function open(next: Mode) {
     setMode(next); setError(""); setStudentId(students[0]?.id ?? ""); setAssignmentId(assignments[0]?.id ?? ""); setScore(""); setFeedback("");
+    if (next === "marks") chooseMark(students[0]?.id ?? "", assignments[0]?.id ?? "");
   }
   function chooseMark(student: string, assignment: string) {
     setStudentId(student); setAssignmentId(assignment);
