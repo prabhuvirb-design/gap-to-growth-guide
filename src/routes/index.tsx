@@ -71,7 +71,7 @@ function App() {
     setTopic(t); setError(""); setStage("loading");
     try {
       const q = await gen({ data: { topic: t, level } });
-      setQuestions(q.questions); setAnswers([]); setStage("quiz");
+      setQuestions(q.questions); setAnswers([]); setAnswered(0); setStage("quiz");
     } catch (e) { setError(errMsg(e)); setStage("setup"); }
   }
 
