@@ -9,4 +9,5 @@
 - [x] Add and verify permanent teacher self-deletion with full classroom and learning-data removal; other accounts remain unchanged.
 - [x] Restore a main-screen login entry, first show Student/Teacher choices, and provide separate Google-only login pages; verified navigation and callback/category tests.
 - [x] Add a separate mark book page for storing student marks in the database; verified entry, score limits, editing and persistence.
+- [x] Add a remove-student control that also clears that student's stored marks; verified cancelling, confirmation wording, and removal.
 - [ ] Verify live Google authorization and return to the correct home; requires the user to complete Google sign-in.
