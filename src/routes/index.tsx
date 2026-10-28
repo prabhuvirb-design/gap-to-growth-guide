@@ -10,8 +10,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Link } from "@tanstack/react-router";
 import { analyzeAnswers, generateAssessment, generatePractice, type Analysis, type Question } from "@/lib/tutor.functions";
 import { nextDifficulty, type Difficulty } from "@/lib/adaptive";
+import { getPracticeLevel, recordPractice } from "@/lib/progress.functions";
+import { useProgress, type Session } from "@/hooks/use-progress";
+import { useAuth } from "@/lib/auth-context";
+import { SessionMenu } from "@/components/session-menu";
+import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,8 +32,6 @@ export const Route = createFileRoute("/")({
 });
 
 type Answer = { concept: string; question: string; chosen: string; correct: string; isCorrect: boolean; difficulty: string; seconds: number };
-type Session = { topic: string; date: string; overall: number; mastery: Analysis["mastery"] };
-const LS = "mentora-sessions";
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
 
@@ -39,7 +43,7 @@ function App() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState("");
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const { sessions, save, ready, signedIn } = useProgress();
   const [answered, setAnswered] = useState(0);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const gen = useServerFn(generateAssessment);
@@ -56,9 +60,6 @@ function App() {
     if (stage === "quiz" && answered > 0) setConfirmLeave(true); else home();
   }
 
-  useEffect(() => {
-    try { setSessions(JSON.parse(localStorage.getItem(LS) || "[]")); } catch { /* empty */ }
-  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !atHome && !busy) goHome(); };
@@ -83,8 +84,7 @@ function App() {
       const a = await analyze({ data: { topic, level, answers: all, history } });
       setAnalysis(a);
       const overall = Math.round(a.mastery.reduce((s, m) => s + m.score, 0) / Math.max(1, a.mastery.length));
-      const next = [{ topic, date: new Date().toLocaleDateString(), overall, mastery: a.mastery }, ...sessions].slice(0, 20);
-      setSessions(next); localStorage.setItem(LS, JSON.stringify(next));
+      await save({ topic, level, overall, summary: a.summary, learningStyle: a.learningStyle, mastery: a.mastery, gaps: a.gaps, path: a.path, feedback: a.feedback });
       setStage("results");
     } catch (e) { setError(errMsg(e)); setStage("quiz"); }
   }
@@ -103,11 +103,11 @@ function App() {
             <span className="font-display text-xl font-semibold">Mentora</span>
           </button>
         </div>
-        <span className="text-sm text-muted-foreground">{sessions.length} sessions tracked</span>
+        <SessionMenu />
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
         {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
-        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions }} />}
+        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions, ready, signedIn }} />}
         {(stage === "loading" || stage === "analyzing") && (
           <Thinking text={stage === "loading" ? `Designing a diagnostic for “${topic}”…` : "Mapping your knowledge and building your path…"} />
         )}
@@ -132,8 +132,9 @@ function App() {
   );
 }
 
-function Setup({ topic, setTopic, level, setLevel, start, sessions }: {
-  topic: string; setTopic: (s: string) => void; level: string; setLevel: (s: string) => void; start: (t?: string) => void; sessions: Session[];
+function Setup({ topic, setTopic, level, setLevel, start, sessions, ready, signedIn }: {
+  topic: string; setTopic: (s: string) => void; level: string; setLevel: (s: string) => void; start: (t?: string) => void;
+  sessions: Session[]; ready: boolean; signedIn: boolean;
 }) {
   const ideas = ["Photosynthesis", "Python loops", "Fractions", "Newton's laws", "Supply & demand", "World War I causes"];
   return (
@@ -158,10 +159,20 @@ function Setup({ topic, setTopic, level, setLevel, start, sessions }: {
       </section>
       <section className="rise">
         <Card className="p-6 shadow-soft">
-          <h2 className="text-2xl font-semibold">Your progress</h2>
-          {sessions.length === 0 ? (
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-2xl font-semibold">Your progress</h2>
+            {signedIn && <Badge variant="outline">On your account</Badge>}
+          </div>
+          {!ready ? (
+            <p className="mt-3 text-sm text-muted-foreground">Loading your progress…</p>
+          ) : sessions.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">No sessions yet. Your mastery over time will appear here.</p>
           ) : <History sessions={sessions} />}
+          {!signedIn && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Held in this browser for now. <Link to="/auth" className="underline decoration-primary/40 underline-offset-4 hover:text-primary">Sign in</Link> to keep it on every device.
+            </p>
+          )}
         </Card>
         <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
           {[["1", "Assess"], ["2", "Diagnose"], ["3", "Adapt"]].map(([n, l]) => (
@@ -178,7 +189,7 @@ function History({ sessions }: { sessions: Session[] }) {
     <ul className="mt-4 space-y-3">
       {sessions.slice(0, 6).map((s, i) => (
         <li key={i}>
-          <div className="flex justify-between text-sm"><span className="font-medium">{s.topic}</span><span className="text-muted-foreground">{s.date} · {s.overall}%</span></div>
+          <div className="flex justify-between text-sm"><span className="font-medium">{s.topic}</span><span className="text-muted-foreground">{formatDate(s.date)} · {s.overall}%</span></div>
           <Progress value={s.overall} className="mt-1 h-2" />
         </li>
       ))}
@@ -305,6 +316,9 @@ function Results({ topic, analysis, restart, sessions }: { topic: string; analys
 
 function Practice({ topic, gap }: { topic: string; gap: Analysis["gaps"][number] }) {
   const gen = useServerFn(generatePractice);
+  const startLevel = useServerFn(getPracticeLevel);
+  const record = useServerFn(recordPractice);
+  const { user } = useAuth();
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [qs, setQs] = useState<Question[]>([]);
   const [i, setI] = useState(0);
@@ -312,15 +326,40 @@ function Practice({ topic, gap }: { topic: string; gap: Analysis["gaps"][number]
   const [round, setRound] = useState<boolean[]>([]);
   const [err, setErr] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const saved = useRef(false);
 
   async function load(d: Difficulty) {
-    setErr(""); setQs([]); setI(0); setRound([]);
+    setErr(""); setQs([]); setI(0); setRound([]); saved.current = false;
     try { const r = await gen({ data: { topic, concept: gap.concept, difficulty: d, misconception: gap.misconception } }); setQs(r.questions); }
     catch (e) { setErr(errMsg(e)); }
   }
-  useEffect(() => { load("easy"); ref.current?.scrollIntoView({ behavior: "smooth" }); }, []);
+
+  // Pick up at the level this learner already earned for this concept.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      let earned: Difficulty = "easy";
+      if (user) {
+        try { const stored = await startLevel({ data: { topic, concept: gap.concept } }); if (stored) earned = stored; }
+        catch { /* first time on this concept */ }
+      }
+      if (!active) return;
+      setDifficulty(earned);
+      await load(earned);
+      ref.current?.scrollIntoView({ behavior: "smooth" });
+    })();
+    return () => { active = false; };
+  }, []);
 
   const done = qs.length > 0 && i >= qs.length;
+
+  // Remember the level earned once a round finishes.
+  useEffect(() => {
+    if (!done || !user || saved.current) return;
+    saved.current = true;
+    void record({ data: { topic, concept: gap.concept, difficulty: nextDifficulty(difficulty, round), correct: round.filter(Boolean).length, attempted: round.length } })
+      .catch(() => { saved.current = false; });
+  }, [done, user, record, topic, gap.concept, difficulty, round]);
   return (
     <div ref={ref} className="mx-auto max-w-2xl scroll-mt-6">
       <div className="mb-3 flex items-center justify-between">
