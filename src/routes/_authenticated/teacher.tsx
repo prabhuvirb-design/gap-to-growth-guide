@@ -6,6 +6,7 @@ import { getTeacherHome } from "@/lib/account.functions";
 import { Button } from "@/components/ui/button";
 import { SessionMenu } from "@/components/session-menu";
 import { GraduationCap, BookOpen, UserRound } from "lucide-react";
+import { TeacherClassroom } from "@/components/teacher-classroom";
 
 export const Route = createFileRoute("/_authenticated/teacher")({
   head: () => ({ meta: [
@@ -44,11 +45,7 @@ function TeacherHome() {
         <Button asChild size="lg"><Link to="/"><BookOpen />Open the tutor</Link></Button>
         <Button asChild variant="outline" size="lg"><Link to="/account"><UserRound />My profile</Link></Button>
       </div>
-      <section className="mt-14 border-t border-border pt-8">
-        <h2 className="text-xl font-semibold">Your classroom</h2>
-        <p className="mt-3 text-muted-foreground">No connected students yet.</p>
-        <p className="mt-2 text-sm text-muted-foreground">Class rosters, assignments, and student reports are not available yet.</p>
-      </section>
+      <TeacherClassroom />
     </main>
   </div>;
 }
