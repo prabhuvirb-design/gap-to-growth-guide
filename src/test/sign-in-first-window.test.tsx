@@ -2,7 +2,7 @@
 // and nothing may be written to the account before a choice exists — claim_account_type is
 // first-write-wins, so a wrong default would be permanent.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterContextProvider } from "@tanstack/react-router";
+import { createMemoryHistory, createRouter, RouterContextProvider } from "@tanstack/react-router";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -62,7 +62,7 @@ function mount(search: Record<string, unknown>, role?: "student" | "teacher") {
     .spyOn(Route as unknown as { useSearch: () => unknown }, "useSearch")
     .mockReturnValue(search) as unknown as { mockRestore: () => void };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const router = createRouter({ routeTree, context: { queryClient } });
+  const router = createRouter({ routeTree, context: { queryClient }, history: createMemoryHistory({ initialEntries: ["/auth"] }) });
   const view = render(
     <RouterContextProvider router={router}>
       <QueryClientProvider client={queryClient}>
@@ -89,8 +89,9 @@ describe("Separate Google login", () => {
     await waitFor(() => expect(screen.getByRole("link", { name: "Teacher" })).toBeInTheDocument());
     expect(claimAccountType).not.toHaveBeenCalled();
   });
-  it("routes student and teacher choices to separate login pages", () => {
+  it("routes student and teacher choices to separate login pages", async () => {
     mount({});
+    await screen.findByRole("link", { name: "Student" });
     expect(screen.getByRole("link", { name: "Student" })).toHaveAttribute("href", "/student-login");
     expect(screen.getByRole("link", { name: "Teacher" })).toHaveAttribute("href", "/teacher-login");
   });
