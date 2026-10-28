@@ -6,7 +6,7 @@ export function nextDifficulty(current: Difficulty, results: boolean[]): Difficu
   if (!results.length) return current;
   const rate = results.filter(Boolean).length / results.length;
   const i = order.indexOf(current);
-  if (rate >= 2 / 3) return order[Math.min(2, i + 1)];
-  if (rate <= 1 / 3) return order[Math.max(0, i - 1)];
+  if (rate >= 2 / 3) return order[Math.min(2, i + 1)] ?? current;
+  if (rate <= 1 / 3) return order[Math.max(0, i - 1)] ?? current;
   return current;
 }

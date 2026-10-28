@@ -185,11 +185,12 @@ function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a:
   const [ans, setAns] = useState<Answer[]>([]);
   if (retry) return <div className="py-20 text-center"><Button onClick={retry}>Retry analysis</Button></div>;
   const q = questions[i];
+  if (!q) return null;
   return (
     <div className="mx-auto max-w-2xl">
       <Progress value={(i / questions.length) * 100} className="mb-6 h-2" />
       <QuestionCard q={q} label={`${i + 1} / ${questions.length}`} onAnswer={(idx, secs) => {
-        const next = [...ans, { concept: q.concept, question: q.question, chosen: q.options[idx], correct: q.options[q.correctIndex], isCorrect: idx === q.correctIndex, difficulty: q.difficulty, seconds: Math.round(secs) }];
+        const next = [...ans, { concept: q.concept, question: q.question, chosen: q.options[idx] ?? "", correct: q.options[q.correctIndex] ?? "", isCorrect: idx === q.correctIndex, difficulty: q.difficulty, seconds: Math.round(secs) }];
         setAns(next);
         if (i + 1 < questions.length) setI(i + 1); else onDone(next);
       }} />
@@ -285,7 +286,7 @@ function Practice({ topic, gap }: { topic: string; gap: Analysis["gaps"][number]
       {err && <p className="text-sm text-destructive">{err} <Button variant="link" onClick={() => load(difficulty)}>Retry</Button></p>}
       {!err && qs.length === 0 && <Thinking text={`Crafting ${difficulty} exercises…`} />}
       {qs[i] && <QuestionCard q={qs[i]} label={`${i + 1} / ${qs.length}`} onAnswer={(idx) => {
-        const ok = idx === qs[i].correctIndex;
+        const ok = idx === qs[i]?.correctIndex;
         if (ok) setCorrect((c) => c + 1);
         setRound((r) => [...r, ok]); setI(i + 1);
       }} />}
