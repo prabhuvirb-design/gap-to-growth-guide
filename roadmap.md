@@ -1,3 +1,4 @@
-- [ ] Add persisted student/teacher account types with protected access.
-- [ ] Add Student and Teacher options to sign-in and account creation, including Google.
-- [ ] Add a separate teacher home and verify both account paths.
+- [x] Add persisted student/teacher account types with protected access.
+- [x] Add Student and Teacher options to sign-in and account creation, including Google.
+- [x] Add a separate teacher home; verify student routing and denial of teacher access.
+- [ ] Verify signed-in teacher home end-to-end: waiting on a teacher account; the existing test account is a student.
