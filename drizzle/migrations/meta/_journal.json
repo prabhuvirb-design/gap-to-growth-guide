@@ -15,6 +15,13 @@
       "when": 1793168177882,
       "tag": "0001_student_teacher_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793170688112,
+      "tag": "0002_teacher_classroom_records",
+      "breakpoints": true
     }
   ]
 }

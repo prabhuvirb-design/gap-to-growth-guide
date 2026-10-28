@@ -5,3 +5,4 @@
 - [x] Recolor the app to the Abyss Blue / Obsidian Slate / Frost White / Electric Sky palette.
 - [ ] Verify signed-in teacher home end-to-end: waiting on a teacher account; the existing test account is a student.
 - [x] Add and verify permanent student self-deletion with confirmation and full learning-data removal.
+- [ ] Add teacher-owned students, assignments, and marks with entry windows and saved records.

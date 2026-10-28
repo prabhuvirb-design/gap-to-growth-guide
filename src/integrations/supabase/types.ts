@@ -135,6 +135,128 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_assignments: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          max_marks: number
+          subject: string
+          teacher_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          max_marks?: number
+          subject?: string
+          teacher_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          max_marks?: number
+          subject?: string
+          teacher_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_marks: {
+        Row: {
+          assignment_id: string
+          feedback: string
+          id: string
+          marks: number
+          student_id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          feedback?: string
+          id?: string
+          marks: number
+          student_id: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          feedback?: string
+          id?: string
+          marks?: number
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_marks_assignment_id_teacher_id_fkey"
+            columns: ["assignment_id", "teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_assignments"
+            referencedColumns: ["id", "teacher_id"]
+          },
+          {
+            foreignKeyName: "teacher_marks_student_id_teacher_id_fkey"
+            columns: ["student_id", "teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_students"
+            referencedColumns: ["id", "teacher_id"]
+          },
+          {
+            foreignKeyName: "teacher_marks_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_students: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          name: string
+          teacher_id: string
+        }
+        Insert: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          name: string
+          teacher_id: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          name?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_students_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
