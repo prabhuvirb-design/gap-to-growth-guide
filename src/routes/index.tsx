@@ -206,7 +206,7 @@ function Results({ topic, analysis, restart, sessions }: { topic: string; analys
     <div className="space-y-8">
       <section className="rise">
         <p className="text-sm font-semibold uppercase tracking-widest text-primary">Your diagnosis · {topic}</p>
-        <h1 className="mt-2 max-w-3xl text-4xl font-bold">{analysis.summary}</h1>
+        <h1 className="mt-2 max-w-4xl text-2xl font-semibold leading-snug md:text-3xl">{analysis.summary}</h1>
         <p className="mt-3 text-muted-foreground"><strong className="text-foreground">How you learn:</strong> {analysis.learningStyle}</p>
       </section>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
