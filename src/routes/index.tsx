@@ -224,7 +224,7 @@ function QuestionCard({ q, onAnswer, label }: { q: Question; onAnswer: (idx: num
   );
 }
 
-function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a: Answer[]) => void; retry?: (() => void) | undefined }) {
+function Quiz({ questions, onProgress, onDone, retry }: { questions: Question[]; onProgress?: (n: number) => void; onDone: (a: Answer[]) => void; retry?: (() => void) | undefined }) {
   const [i, setI] = useState(0);
   const [ans, setAns] = useState<Answer[]>([]);
   if (retry) return <div className="py-20 text-center"><Button onClick={retry}>Retry analysis</Button></div>;
@@ -235,7 +235,7 @@ function Quiz({ questions, onDone, retry }: { questions: Question[]; onDone: (a:
       <Progress value={(i / questions.length) * 100} className="mb-6 h-2" />
       <QuestionCard q={q} label={`${i + 1} / ${questions.length}`} onAnswer={(idx, secs) => {
         const next = [...ans, { concept: q.concept, question: q.question, chosen: q.options[idx] ?? "", correct: q.options[q.correctIndex] ?? "", isCorrect: idx === q.correctIndex, difficulty: q.difficulty, seconds: Math.round(secs) }];
-        setAns(next);
+        setAns(next); onProgress?.(next.length);
         if (i + 1 < questions.length) setI(i + 1); else onDone(next);
       }} />
     </div>
