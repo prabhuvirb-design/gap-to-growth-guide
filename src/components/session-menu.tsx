@@ -15,15 +15,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /** The header control: shows what the learner can do right now, not a static "Sign in". */
-export function SessionMenu() {
+export function SessionMenu({ hideSignedOut = false }: { hideSignedOut?: boolean }) {
   const { user, ready } = useAuth();
   const signOut = useSignOut();
   const fetchRole = useServerFn(getAccountType);
   const { data: role } = useQuery({ queryKey: ["account-type", user?.id], queryFn: () => fetchRole(), enabled: ready && Boolean(user) });
 
-  if (!ready) return <span className="h-8 w-28 animate-pulse rounded-md bg-muted" aria-hidden />;
+  if (!ready) return hideSignedOut ? null : <span className="h-8 w-28 animate-pulse rounded-md bg-muted" aria-hidden />;
 
   if (!user) {
+    if (hideSignedOut) return null;
     return (
       <div className="flex items-center gap-2">
         <Button asChild size="sm" variant="outline">

@@ -10,7 +10,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Link } from "@tanstack/react-router";
 import { analyzeAnswers, generateAssessment, generatePractice, type Analysis, type Question } from "@/lib/tutor.functions";
 import { nextDifficulty, type Difficulty } from "@/lib/adaptive";
 import { getPracticeLevel, recordPractice } from "@/lib/progress.functions";
@@ -105,7 +104,7 @@ function App() {
             <span className="font-display text-xl font-semibold">Mentora</span>
           </button>
         </div>
-        <SessionMenu />
+        <SessionMenu hideSignedOut />
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
         {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
@@ -172,7 +171,7 @@ function Setup({ topic, setTopic, level, setLevel, start, sessions, ready, signe
           ) : <History sessions={sessions} />}
           {!signedIn && (
             <p className="mt-4 text-sm text-muted-foreground">
-              Held in this browser for now. <Link to="/auth" className="underline decoration-primary/40 underline-offset-4 hover:text-primary">Sign in</Link> to keep it on every device.
+              Saved in this browser.
             </p>
           )}
         </Card>
