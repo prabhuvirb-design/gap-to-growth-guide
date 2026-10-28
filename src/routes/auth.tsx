@@ -244,7 +244,7 @@ function AuthPage() {
 
           {!role ? (
             <>
-              <h2 className="text-xl font-semibold">Who is signing in?</h2>
+              <h2 className="text-xl font-semibold">{mode === "signup" ? "Who is creating an account?" : "Who is signing in?"}</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Choose Student or Teacher first — each one opens a different home.
               </p>
