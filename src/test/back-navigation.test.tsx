@@ -38,7 +38,7 @@ describe("Back to menu", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Fractions" }));
     await screen.findByText("Which equals 1/2?");
-    expect(menu()).not.toBeInTheDocument();
+    expect(atMenu()).toBe(false);
 
     fireEvent.click(screen.getByRole("button", { name: /back to menu/i }));
 
@@ -58,7 +58,7 @@ describe("Back to menu", () => {
     expect(await screen.findByText("Leave the check-up?")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Keep going" }));
     expect(screen.getByText("1/4 + 1/4 = ?")).toBeInTheDocument();
-    expect(menu()).not.toBeInTheDocument();
+    expect(atMenu()).toBe(false);
   });
 
   it("clears the check-up when leaving it for the menu", async () => {
