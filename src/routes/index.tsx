@@ -10,8 +10,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Link } from "@tanstack/react-router";
 import { analyzeAnswers, generateAssessment, generatePractice, type Analysis, type Question } from "@/lib/tutor.functions";
 import { nextDifficulty, type Difficulty } from "@/lib/adaptive";
+import { getPracticeLevel, recordPractice } from "@/lib/progress.functions";
+import { useProgress, type Session } from "@/hooks/use-progress";
+import { useAuth } from "@/lib/auth-context";
+import { SessionMenu } from "@/components/session-menu";
+import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,8 +32,6 @@ export const Route = createFileRoute("/")({
 });
 
 type Answer = { concept: string; question: string; chosen: string; correct: string; isCorrect: boolean; difficulty: string; seconds: number };
-type Session = { topic: string; date: string; overall: number; mastery: Analysis["mastery"] };
-const LS = "mentora-sessions";
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
 
@@ -39,7 +43,7 @@ function App() {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState("");
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const { sessions, save, ready, signedIn } = useProgress();
   const [answered, setAnswered] = useState(0);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const gen = useServerFn(generateAssessment);
@@ -56,9 +60,6 @@ function App() {
     if (stage === "quiz" && answered > 0) setConfirmLeave(true); else home();
   }
 
-  useEffect(() => {
-    try { setSessions(JSON.parse(localStorage.getItem(LS) || "[]")); } catch { /* empty */ }
-  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !atHome && !busy) goHome(); };
@@ -83,8 +84,7 @@ function App() {
       const a = await analyze({ data: { topic, level, answers: all, history } });
       setAnalysis(a);
       const overall = Math.round(a.mastery.reduce((s, m) => s + m.score, 0) / Math.max(1, a.mastery.length));
-      const next = [{ topic, date: new Date().toLocaleDateString(), overall, mastery: a.mastery }, ...sessions].slice(0, 20);
-      setSessions(next); localStorage.setItem(LS, JSON.stringify(next));
+      await save({ topic, level, overall, summary: a.summary, learningStyle: a.learningStyle, mastery: a.mastery, gaps: a.gaps, path: a.path, feedback: a.feedback });
       setStage("results");
     } catch (e) { setError(errMsg(e)); setStage("quiz"); }
   }
@@ -103,11 +103,11 @@ function App() {
             <span className="font-display text-xl font-semibold">Mentora</span>
           </button>
         </div>
-        <span className="text-sm text-muted-foreground">{sessions.length} sessions tracked</span>
+        <SessionMenu />
       </header>
       <main className="mx-auto max-w-6xl px-6 pb-20">
         {error && <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
-        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions }} />}
+        {stage === "setup" && <Setup {...{ topic, setTopic, level, setLevel, start, sessions, ready, signedIn }} />}
         {(stage === "loading" || stage === "analyzing") && (
           <Thinking text={stage === "loading" ? `Designing a diagnostic for “${topic}”…` : "Mapping your knowledge and building your path…"} />
         )}
