@@ -26,6 +26,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Diagnose knowledge gaps, get personalized explanations, and follow an adaptive learning path." },
       { property: "og:title", content: "Mentora — Adaptive AI Tutor" },
       { property: "og:description", content: "Diagnose knowledge gaps and follow a learning path that adapts to you." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: App,

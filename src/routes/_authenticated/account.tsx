@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/account")({
       },
       { property: "og:title", content: "Your account — Mentora" },
       { property: "og:description", content: "Your profile, saved diagnostics, and practice levels." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
